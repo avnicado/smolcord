@@ -74,19 +74,17 @@ jobs:
 
       # Pick whatever iPhone simulator the runner actually has. Hard-coding a
       # device name breaks whenever GitHub changes the image.
+      #
+      # One line on purpose: an embedded multi-line script inside a YAML block
+      # scalar is how the first push failed. A line at column zero terminates
+      # the scalar, and the whole workflow stops parsing.
       - name: choose a simulator
         id: sim
         run: |
-          name=$(xcrun simctl list devices available -j \
-            | python3 -c "import json,sys
-d=json.load(sys.stdin)['devices']
-for runtime, devices in d.items():
-    if 'iOS' not in runtime: continue
-    for dev in devices:
-        if dev.get('isAvailable') and 'iPhone' in dev['name']:
-            print(dev['name']); raise SystemExit")
-          echo "name=${name:-iPhone 16}" >> "$GITHUB_OUTPUT"
-          echo "using simulator: ${name:-iPhone 16}"
+          name=$(xcrun simctl list devices available -j | jq -r '.devices | to_entries[] | select(.key | test("iOS")) | .value[] | select(.isAvailable == true) | .name' | grep -m1 iPhone || true)
+          name=${name:-iPhone 16}
+          echo "name=$name" >> "$GITHUB_OUTPUT"
+          echo "using simulator: $name"
 
       - name: unit tests on the simulator
         run: |
