@@ -100,10 +100,18 @@ public final class ByteMeter {
     /// So the Gateway calls this once it knows a payload was a one-time cost.
     /// `isColdStart` distinguishes a full READY from a resume, because the
     /// measurements say the number of cold starts is what decides the budget.
+    /// A note on precision: `recordInbound` adds an overhead estimate per
+    /// WebSocket frame, and a 119KB READY arrives as several frames. This
+    /// removes the payload plus one frame's overhead, so a multi-frame payload
+    /// leaves a residue of roughly 126 bytes per extra frame. That is about
+    /// 1KB against a 1MB budget. Tracking it exactly would mean threading a
+    /// frame count from the transport through the inflater to here, which is
+    /// more coupling than the accuracy is worth.
     public func reclassifyAsConnect(bytes: Int, isColdStart: Bool) {
         lock.lock()
+        let billed = bytes + ByteMeter.tlsRecordOverhead + ByteMeter.tcpIpOverhead
         connectBytes += bytes
-        removeFromBuckets(bytes)
+        removeFromBuckets(billed)
         if isColdStart { coldStarts += 1 }
         lock.unlock()
         onChange?()

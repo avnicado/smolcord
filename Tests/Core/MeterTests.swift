@@ -37,11 +37,33 @@ final class ByteMeterTests: XCTestCase {
     func testIdleHeartbeatTrafficStaysUnderBudget() {
         let meter = ByteMeter()
         XCTAssertFalse(meter.isOverBudget)
-        // One hour of heartbeats at the measured interval of 41250 ms.
-        for _ in 0..<87 { meter.recordOutbound(frameBytes: 24) }
-        for _ in 0..<87 { meter.recordInbound(frameBytes: 20, inflated: 18) }
+
+        // ONE MINUTE of heartbeats, not an hour's worth.
+        //
+        // The measured interval is 41250 ms, so about 1.45 beats per minute.
+        // An earlier version of this test recorded all 87 hourly beats, which
+        // all landed in a single minute bucket; projectedPerHour then scaled
+        // that minute by 60 and reported 1.55MB/hr. The projection was right
+        // and the test was wrong.
+        for _ in 0..<2 {
+            meter.recordOutbound(frameBytes: 24)
+            meter.recordInbound(frameBytes: 20, inflated: 18)
+        }
         XCTAssertFalse(meter.isOverBudget,
                        "idle heartbeat traffic should not approach 1MB/hr")
+        // Sanity-check the magnitude: ~4 frames/min of overhead-dominated
+        // traffic should land in the tens of KB per hour.
+        XCTAssertLessThan(meter.projectedPerHour, 100 * 1_024)
+    }
+
+    func testProjectionExtrapolatesFromAShortWindowOnPurpose() {
+        // Documents the behaviour the test above tripped over. A single busy
+        // minute is reported as if the hour continued that way, which is what
+        // gives the status line early warning rather than a lagging average.
+        let meter = ByteMeter()
+        meter.recordInbound(frameBytes: 20_000, inflated: 60_000)
+        XCTAssertGreaterThan(meter.projectedPerHour, 20_000 * 50,
+                             "a short window must extrapolate, not average down")
     }
 
     func testShortFormatting() {
@@ -64,7 +86,10 @@ final class ByteMeterReclassifyTests: XCTestCase {
         meter.reclassifyAsConnect(bytes: 121_548, isColdStart: true)
         XCTAssertFalse(meter.isOverBudget,
                        "after reclassifying, the hourly projection must exclude READY")
-        XCTAssertEqual(meter.bytesLastHour, 0)
+        // Not asserted as exactly zero: a multi-frame payload leaves a small
+        // per-frame overhead residue by design. See reclassifyAsConnect.
+        XCTAssertLessThan(meter.projectedPerHour, 1_024 * 1_024 / 20,
+                          "the residue must be negligible against the budget")
         XCTAssertEqual(meter.coldStarts, 1)
     }
 

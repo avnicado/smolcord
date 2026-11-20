@@ -34,11 +34,14 @@ settings:
     DEAD_CODE_STRIPPING: YES
     GCC_WARN_UNUSED_VARIABLE: YES
     SWIFT_TREAT_WARNINGS_AS_ERRORS: NO
+  # Capitalised on purpose. XcodeGen's default configurations are Debug and
+  # Release; lowercase names here produced "Scheme has invalid build
+  # configuration" and no project at all.
   configs:
-    debug:
+    Debug:
       SWIFT_OPTIMIZATION_LEVEL: "-Onone"
       SWIFT_ACTIVE_COMPILATION_CONDITIONS: DEBUG
-    release:
+    Release:
       SWIFT_OPTIMIZATION_LEVEL: "-O"
       # Strip for size. There is no crash reporting service to feed.
       DEPLOYMENT_POSTPROCESSING: YES
@@ -84,10 +87,10 @@ schemes:
         smolcord: all
         smolcordTests: [test]
     run:
-      config: debug
+      config: Debug
     test:
-      config: debug
+      config: Debug
       targets:
         - smolcordTests
     archive:
-      config: release
+      config: Release

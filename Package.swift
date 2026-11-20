@@ -52,6 +52,19 @@ let package = Package(
             name: "smolcord",
             dependencies: ["CZlib"],
             path: "Sources",
+            // Everything Apple-only. Listed so SwiftPM stops warning about
+            // unhandled files, and so the split is explicit rather than
+            // implied by the sources list below.
+            exclude: [
+                "App",                                  // UIKit
+                "UI",                                   // UIKit
+                "Protocol/Gateway.swift",               // needs WebSocketClient
+                "Transport/WebSocketClient.swift",      // Network.framework
+                "Model/DMStore.swift",                  // needs Gateway, Keychain
+                "Model/Keychain.swift",                 // Security.framework
+                "Model/REST.swift",                     // tested on device
+                "Support/smolcord-Bridging-Header.h",   // Xcode uses this; SwiftPM uses CZlib
+            ],
             // An explicit list, not a glob. Adding a file here is a claim that
             // it imports nothing Apple-specific, and the build will say so if
             // the claim is wrong.
