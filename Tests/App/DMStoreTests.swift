@@ -180,8 +180,11 @@ final class DMStoreTests: XCTestCase {
         // of channels, roles and emojis for 16 guilds; none of it may land
         // on disk.
         XCTAssertTrue(snap.channels.allSatisfy { $0.type == 1 || $0.type == 3 })
-        XCTAssertTrue(snap.messages.keys.allSatisfy { snap.channels.contains { c in c.id == $0 } },
-                      "a message was stored for a channel that is not a tracked DM")
+        // The outer argument is named: `$0` inside a nested closure that has an
+        // explicit parameter is not legal Swift.
+        XCTAssertTrue(snap.messages.keys.allSatisfy { channelID in
+            snap.channels.contains { $0.id == channelID }
+        }, "a message was stored for a channel that is not a tracked DM")
         XCTAssertNotNil(snap.selfUserID)
     }
 
