@@ -158,11 +158,31 @@ final class DMStoreTests: XCTestCase {
                        "a guild must never appear as a conversation")
     }
 
-    func testGuildVersionsAreKeptForTheNextIdentify() {
+    func testDMStoreDoesNotOwnGuildVersions() {
         store.apply(ready())
-        // Lever 3: these go back in the next IDENTIFY so Discord can omit
-        // unchanged guild data from a 119KB READY.
-        XCTAssertEqual(persistence.snapshot.guildVersions["900"], 3)
+        // Deliberately nil. READY carries guild versions, and DMStore drops
+        // them: persisting them is Gateway's job, through its SessionCache and
+        // the onSessionCache callback. DMStore has no guild responsibilities
+        // at all, which is why it has no guild state to get wrong.
+        //
+        // An earlier version of this test asserted the opposite and failed in
+        // CI. The division of labour is the correct behaviour, not the bug.
+        XCTAssertNil(persistence.snapshot.guildVersions["900"],
+                     "DMStore must not persist guild state")
+    }
+
+    func testDMStorePersistsOnlyWhatTheUICanShow() {
+        store.apply(ready())
+        store.apply(message("310", channel: "20", author: "3", text: "hi"))
+        let snap = persistence.snapshot
+
+        // Everything persisted must be DM-shaped. A 119KB READY arrives full
+        // of channels, roles and emojis for 16 guilds; none of it may land
+        // on disk.
+        XCTAssertTrue(snap.channels.allSatisfy { $0.type == 1 || $0.type == 3 })
+        XCTAssertTrue(snap.messages.keys.allSatisfy { snap.channels.contains { c in c.id == $0 } },
+                      "a message was stored for a channel that is not a tracked DM")
+        XCTAssertNotNil(snap.selfUserID)
     }
 
     func testGuildContentIsNeverRetained() {
