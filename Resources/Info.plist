@@ -31,10 +31,17 @@
 	<array>
 		<string>arm64</string>
 	</array>
+	<!-- Portrait only. A fixed character grid has no sensible landscape
+	     layout on a 4-inch screen, and rotation would reflow every line. -->
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>
 	</array>
+	<!-- Required alongside a restricted orientation set, or the build warns
+	     "All interface orientations must be supported unless the app requires
+	     full screen." -->
+	<key>UIRequiresFullScreen</key>
+	<true/>
 	<!-- A terminal is a dark surface. The status bar must match. -->
 	<key>UIStatusBarStyle</key>
 	<string>UIStatusBarStyleLightContent</string>

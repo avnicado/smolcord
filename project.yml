@@ -67,9 +67,10 @@ targets:
         # System zlib. iOS ships libz and zlib.h is in the SDK, so streaming
         # inflate needs no vendored C library.
         SWIFT_OBJC_BRIDGING_HEADER: Sources/Support/smolcord-Bridging-Header.h
-        OTHER_LDFLAGS: "-lz"
         CODE_SIGN_STYLE: Automatic
     dependencies:
+      # Links libz. An OTHER_LDFLAGS of "-lz" here as well produced
+      # "ignoring duplicate libraries: '-lz'".
       - sdk: libz.tbd
 
   smolcordTests:

@@ -91,13 +91,25 @@ So the three things that matter, in order:
 | Transport (`WebSocketClient`, `ZlibInflater`, `ByteMeter`) | Written, with tests. The Python reference implementation passes 22/22. |
 | Protocol (`Gateway`, `Identify`, `GatewayEvent`) | Written, with tests. |
 | Model (`DMStore`, `Persistence`, `Keychain`, `REST`) | Written, with tests. |
-| UI (`TermLogView`, `ChannelListVC`, `ConversationVC`, `StatusLine`) | Written. Never seen on a screen. |
-| CI | `.github/workflows/ios-build.yml` is written and **has never run**. It is the first thing that will compile any of this. |
+| UI (`TermLogView`, `ChannelListVC`, `ConversationVC`, `StatusLine`) | Compiles. **Never seen on a screen.** |
+| CI | Green. Builds for arm64 iOS, runs 55 tests on a simulator and 41 on Linux. |
 
-**No Swift in this repository has been compiled.** There is no Swift toolchain
-on the machine it was written on. 53 Swift tests exist and none has ever
-executed. Treat the first build as a real step with real errors to fix, not a
-formality.
+**It compiles, and the tests pass.** `xcodebuild` builds the app for arm64 iOS
+with a 12.0 deployment target, 55 tests pass on a simulator, and 41 of those
+also pass on Linux via `Package.swift`.
+
+**It has never run on a screen.** Compiling is not working. The terminal UI,
+the recycling log view, keyboard handling and the real data rate are all
+unverified until an iOS 12 device runs it.
+
+Getting from "written" to "compiles" took six rounds of CI and surfaced six
+real defects. Three were in the build configuration, which no amount of reading
+catches: a YAML block scalar terminated by a column-zero line, lowercase
+XcodeGen build configurations, and an `Info.plist` claimed by two build phases.
+Three were in the tests, all in code added after `Sources/` was already clean:
+a reclassification that left per-frame overhead behind, a heartbeat test that
+crammed an hour into one minute, and a nested closure using `$0` where the
+inner closure had an explicit parameter.
 
 ### How to compile it
 
