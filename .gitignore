@@ -1,0 +1,20 @@
+# Captured gateway payloads contain personal data. Never commit them.
+tools/fixtures/*.json
+tools/fixtures/*.jsonl
+tools/out/
+
+# Xcode
+*.xcodeproj/
+*.xcworkspace/
+build/
+DerivedData/
+.DS_Store
+*.ipa
+*.dSYM.zip
+
+# Secrets
+.env
+
+# Python
+__pycache__/
+*.pyc

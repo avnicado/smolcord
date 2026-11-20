@@ -1,0 +1,93 @@
+# XcodeGen spec.
+#
+# The .xcodeproj is NOT checked in: it is a binary that conflicts on every
+# merge and it encodes an Xcode version. This file regenerates it.
+#
+#   brew install xcodegen
+#   xcodegen generate
+#   open smolcord.xcodeproj
+#
+# On the iOS 12 deployment target: Xcode 26 officially supports iOS 15 and up.
+# A lower target still builds, with a warning. That warning is expected here.
+# App Store distribution is not possible at iOS 12 (the store requires iOS 13+
+# since 9 Sept 2026, and iOS 15+ from April 2027), and this app would not pass
+# review regardless. Distribution is by sideload.
+
+name: smolcord
+options:
+  bundleIdPrefix: cord.smol
+  deploymentTarget:
+    iOS: "12.0"
+  createIntermediateGroups: true
+  developmentLanguage: en
+
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    IPHONEOS_DEPLOYMENT_TARGET: "12.0"
+    TARGETED_DEVICE_FAMILY: "1"      # iPhone only
+    CLANG_ENABLE_MODULES: YES
+    ENABLE_BITCODE: NO
+    # Smaller binary: a 2015 device has little storage to spare and the app is
+    # deliberately tiny.
+    SWIFT_COMPILATION_MODE: wholemodule
+    DEAD_CODE_STRIPPING: YES
+    GCC_WARN_UNUSED_VARIABLE: YES
+    SWIFT_TREAT_WARNINGS_AS_ERRORS: NO
+  configs:
+    debug:
+      SWIFT_OPTIMIZATION_LEVEL: "-Onone"
+      SWIFT_ACTIVE_COMPILATION_CONDITIONS: DEBUG
+    release:
+      SWIFT_OPTIMIZATION_LEVEL: "-O"
+      # Strip for size. There is no crash reporting service to feed.
+      DEPLOYMENT_POSTPROCESSING: YES
+      STRIP_INSTALLED_PRODUCT: YES
+
+targets:
+  smolcord:
+    type: application
+    platform: iOS
+    sources:
+      - path: Sources
+      - path: Resources
+        buildPhase: resources
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: cord.smol.app
+        INFOPLIST_FILE: Resources/Info.plist
+        # System zlib. iOS ships libz and zlib.h is in the SDK, so streaming
+        # inflate needs no vendored C library.
+        SWIFT_OBJC_BRIDGING_HEADER: Sources/Support/smolcord-Bridging-Header.h
+        OTHER_LDFLAGS: "-lz"
+        CODE_SIGN_STYLE: Automatic
+    dependencies:
+      - sdk: libz.tbd
+
+  smolcordTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: Tests
+        excludes:
+          - "*.py"
+    dependencies:
+      - target: smolcord
+    settings:
+      base:
+        SWIFT_OBJC_BRIDGING_HEADER: Sources/Support/smolcord-Bridging-Header.h
+
+schemes:
+  smolcord:
+    build:
+      targets:
+        smolcord: all
+        smolcordTests: [test]
+    run:
+      config: debug
+    test:
+      config: debug
+      targets:
+        - smolcordTests
+    archive:
+      config: release
