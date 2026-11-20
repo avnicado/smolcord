@@ -55,6 +55,11 @@ targets:
       - path: Sources
       - path: Resources
         buildPhase: resources
+        excludes:
+          # Info.plist is named by INFOPLIST_FILE below, which already copies
+          # it into the bundle. Including it as a resource too makes two build
+          # commands produce the same output, which Xcode rejects.
+          - "Info.plist"
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: cord.smol.app
